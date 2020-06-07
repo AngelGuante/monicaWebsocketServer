@@ -18,11 +18,7 @@ namespace monicaWebsocketServer
             if (_clients.ContainsKey(context.Connection.RemoteIpAddress.ToString()))
                 Respond(webSocket, "IP DUPLICADA.", ClientMessageStatus.DuplicatedIP);
             else
-            {
                 _clients.Add(context.Connection.RemoteIpAddress.ToString(), webSocket);
-                Send(webSocket, $"WELCOME! {context.Connection.Id}");
-                Send(webSocket, $"Your IP: {context.Connection.RemoteIpAddress}");
-            }
 
             while (true)
             {

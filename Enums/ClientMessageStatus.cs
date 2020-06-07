@@ -3,5 +3,6 @@ namespace monicaWebsocketServer{
         NONE = 0,
         Correct = 1,
         DuplicatedIP = 2,
+        IndividualClientStatusReport = 3
     }
 }
