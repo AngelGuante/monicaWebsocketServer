@@ -18,3 +18,5 @@ D:\Mis cosas\I\Proyectos\.Net\.Net Core\monicaWebsocketServer\obj\Debug\netcorea
 D:\Mis cosas\I\Proyectos\.Net\.Net Core\monicaWebsocketServer\obj\Debug\netcoreapp3.1\monicaWebsocketServer.dll
 D:\Mis cosas\I\Proyectos\.Net\.Net Core\monicaWebsocketServer\obj\Debug\netcoreapp3.1\monicaWebsocketServer.pdb
 D:\Mis cosas\I\Proyectos\.Net\.Net Core\monicaWebsocketServer\obj\Debug\netcoreapp3.1\monicaWebsocketServer.genruntimeconfig.cache
+D:\Mis cosas\I\Proyectos\.Net\.Net Core\monicaWebsocketServer\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
+D:\Mis cosas\I\Proyectos\.Net\.Net Core\monicaWebsocketServer\obj\Debug\netcoreapp3.1\monicaWebsocketServer.csproj.CopyComplete

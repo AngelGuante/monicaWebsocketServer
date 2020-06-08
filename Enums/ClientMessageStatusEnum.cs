@@ -1,5 +1,5 @@
 namespace monicaWebsocketServer{
-    public enum ClientMessageStatus{
+    public enum ClientMessageStatusEnum{
         NONE = 0,
         Correct = 1,
         DuplicatedIP = 2,

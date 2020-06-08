@@ -11,12 +11,12 @@ namespace monicaWebsocketServer
     {
         [HttpGet]
         [Route("SendToClient")]
-        public bool SendToClient(string IP, string data)
+        public bool SendToClient(string IP, ClientMessageStatusEnum status, string data)
         {
             var websocket = GetClientByIP(IP);
             if (websocket != default)
             {
-                Send(websocket, data);
+                Respond(websocket, data, status);
                 return true;
             }
 
