@@ -19,52 +19,61 @@ namespace monicaWebsocketServer
 
         public static async Task Listen(HttpContext context, WebSocket webSocket)
         {
-            if (_clients.ContainsKey(context.Connection.RemoteIpAddress.ToString()))
-                Respond(webSocket, "IP DUPLICADA.", ClientMessageStatusEnum.DuplicatedIP);
-            else
-                _clients.Add(context.Connection.RemoteIpAddress.ToString(), webSocket);
-
-            while (true)
+            try
             {
-                WebSocketReceiveResult result;
-                ArraySegment<byte> message = new ArraySegment<byte>(new byte[8192]);
-
-                do
+                if (!_clients.ContainsKey(context.Connection.RemoteIpAddress.ToString()))
+                    _clients.Add(context.Connection.RemoteIpAddress.ToString(), webSocket);
+                while (true)
                 {
-                    result = await webSocket.ReceiveAsync(message, CancellationToken.None);
-                    byte[] messageBytes = message.Skip(message.Offset).Take(result.Count).ToArray();
-                    string serialisedMessage = Encoding.UTF8.GetString(messageBytes);
+                    WebSocketReceiveResult result = null;
+                    ArraySegment<byte> message = new ArraySegment<byte>(new byte[8192]);
+
+                    do
+                    {
+                        if (!webSocket.CloseStatus.HasValue)
+                        {
+                            result = await webSocket.ReceiveAsync(message, CancellationToken.None);
+                            byte[] messageBytes = message.Skip(message.Offset).Take(result.Count).ToArray();
+                            string serialisedMessage = Encoding.UTF8.GetString(messageBytes);
+
+                            if (_clientDataTMP.ContainsKey(context.Connection.Id))
+                                _clientDataTMP[context.Connection.Id] += serialisedMessage;
+                            else
+                                _clientDataTMP.Add(context.Connection.Id, serialisedMessage);
+                        }
+                        else
+                            _clients.Remove(context.Connection.RemoteIpAddress.ToString());
+                    } while (!result.EndOfMessage);
 
                     if (!webSocket.CloseStatus.HasValue)
                     {
-                        if (_clientDataTMP.ContainsKey(context.Connection.Id))
-                            _clientDataTMP[context.Connection.Id] += serialisedMessage;
-                        else
-                            _clientDataTMP.Add(context.Connection.Id, serialisedMessage);
+                        await SendToServer(context, _clientDataTMP[context.Connection.Id]);
+                        _clientDataTMP.Remove(context.Connection.Id);
                     }
-                    else
-                        _clients.Remove(context.Connection.RemoteIpAddress.ToString());
-                } while (!result.EndOfMessage);
-
-                var obj = new WebSocketDTO
-                {
-                    data = _clientDataTMP[context.Connection.Id]
-                };
-                var content = new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json");
-
-                // await POST($"https://localhost:44392/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
-                await POST($"https://webmonica.azurewebsites.net/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
-
-                _clientDataTMP.Remove(context.Connection.Id);
+                }
+            }
+            catch (Exception e) {
+                await SendToServer(context, $"Error: {e.Message}");
             }
         }
 
-        public static async void Respond(WebSocket webSocket, string message, ClientMessageStatusEnum status)
+        public static async void Respond(WebSocket webSocket, string message)
         {
-            var serialisedMessage = $"{(int)status}<{message}";
-            var byteMessage = Encoding.UTF8.GetBytes(serialisedMessage);
+            var byteMessage = Encoding.UTF8.GetBytes(message);
             var segmnet = new ArraySegment<byte>(byteMessage, 0, byteMessage.Length);
             await webSocket.SendAsync(segmnet, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        public static async Task SendToServer(HttpContext context, string data)
+        {
+            var obj = new WebSocketDTO
+            {
+                data = data
+            };
+            var content = new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json");
+
+            // await POST($"https://localhost:44392/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
+            await POST($"https://webmonica.azurewebsites.net/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
         }
     }
 }

@@ -9,14 +9,15 @@ namespace monicaWebsocketServer
     [Route("API/SendDataClient")]
     public class SendDataClientController : ControllerBase
     {
-        [HttpGet]
+        [HttpPost]
         [Route("SendToClient")]
-        public bool SendToClient(string IP, ClientMessageStatusEnum status, string data)
+        [Route("SendToClient/{IP}")]
+        public bool SendToClient(WebSocketDTO data, string IP)
         {
             var websocket = GetClientByIP(IP);
             if (websocket != default)
             {
-                Respond(websocket, data, status);
+                Respond(websocket, data.data);
                 return true;
             }
 
