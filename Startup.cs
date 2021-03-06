@@ -45,15 +45,19 @@ namespace monicaWebsocketServer
 
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path == "/ws")
+                try
                 {
-                    if (context.WebSockets.IsWebSocketRequest)
-                        await Listen(context, await context.WebSockets.AcceptWebSocketAsync());
+                    if (context.Request.Path == "/ws")
+                    {
+                        if (context.WebSockets.IsWebSocketRequest)
+                            await Listen(context, await context.WebSockets.AcceptWebSocketAsync());
+                        else
+                            context.Response.StatusCode = 400;
+                    }
                     else
-                        context.Response.StatusCode = 400;
+                        await next();
                 }
-                else
-                    await next();
+                catch (Exception) { }
 
             });
 

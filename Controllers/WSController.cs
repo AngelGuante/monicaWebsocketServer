@@ -42,8 +42,16 @@ namespace monicaWebsocketServer
                                 _clientDataTMP.Add(context.Connection.Id, serialisedMessage);
                         }
                         else
+                        {
                             _clients.Remove(context.Connection.RemoteIpAddress.ToString());
-                    } while (!result.EndOfMessage);
+                            break;
+                        }
+                    } while (result != null && !result.EndOfMessage);
+
+                    if (webSocket.State.ToString() == "CloseReceived"){
+                        _clients.Remove(context.Connection.RemoteIpAddress.ToString());
+                        break;
+                    }
 
                     if (!webSocket.CloseStatus.HasValue)
                     {
@@ -52,7 +60,8 @@ namespace monicaWebsocketServer
                     }
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 await SendToServer(context, $"Error: {e.Message}");
             }
         }
@@ -72,8 +81,8 @@ namespace monicaWebsocketServer
             };
             var content = new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json");
 
-            await POST($"https://localhost:44392/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
-            // await POST($"https://moniextra.com/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
+            // await POST($"https://localhost:44392/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
+            await POST($"https://moniextra.com/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
         }
     }
 }
