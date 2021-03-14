@@ -4,7 +4,6 @@ using static monicaWebsocketServer.Clients;
 
 namespace monicaWebsocketServer
 {
-
     [ApiController]
     [Route("API/SendDataClient")]
     public class SendDataClientController : ControllerBase
@@ -27,6 +26,17 @@ namespace monicaWebsocketServer
         [HttpGet]
         [Route("GetClients")]
         public JsonResult GetClients() =>
-         Clients.GetClients();
+            Clients.GetClients();
+
+        [HttpGet]
+        [Route("Exceptions")]
+        public JsonResult Exceptions(bool clear = false) =>
+            Clients.Exceptions(clear);
+        
+        [HttpGet]
+        [Route("SetException")]
+        public JsonResult SetException(){
+            throw new System.Exception("Exception throwed");
+        }
     }
 }

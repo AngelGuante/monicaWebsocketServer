@@ -1,15 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using static monicaWebsocketServer.WSController;
 
 namespace monicaWebsocketServer
@@ -37,28 +31,25 @@ namespace monicaWebsocketServer
                 app.UseDeveloperExceptionPage();
             }
 
+            app.ConfigureCustomExceptionMiddleware();
+
             app.UseWebSockets(new WebSocketOptions
             {
-                KeepAliveInterval = TimeSpan.FromSeconds(120),
+                KeepAliveInterval = TimeSpan.FromSeconds(0),
                 ReceiveBufferSize = 4096,
             });
 
             app.Use(async (context, next) =>
             {
-                try
+                if (context.Request.Path == "/ws")
                 {
-                    if (context.Request.Path == "/ws")
-                    {
-                        if (context.WebSockets.IsWebSocketRequest)
-                            await Listen(context, await context.WebSockets.AcceptWebSocketAsync());
-                        else
-                            context.Response.StatusCode = 400;
-                    }
+                    if (context.WebSockets.IsWebSocketRequest)
+                        await Listen(context, await context.WebSockets.AcceptWebSocketAsync());
                     else
-                        await next();
+                        context.Response.StatusCode = 400;
                 }
-                catch (Exception) { }
-
+                else
+                    await next();
             });
 
             app.UseHttpsRedirection();

@@ -9,20 +9,22 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using static monicaWebsocketServer.Utils.RequestsHTTP;
+using static monicaWebsocketServer.ExceptionMiddleware;
 
 namespace monicaWebsocketServer
 {
     public class WSController
     {
-        protected static Dictionary<string, WebSocket> _clients = new Dictionary<string, WebSocket>();
+        protected static Dictionary<string, WebSocket> clients = new Dictionary<string, WebSocket>();
         private static Dictionary<string, string> _clientDataTMP = new Dictionary<string, string>();
+        protected static string ServerRunSinced = DateTime.Now.ToString("dd/MM/yyyy h:mm tt");
 
         public static async Task Listen(HttpContext context, WebSocket webSocket)
         {
             try
             {
-                if (!_clients.ContainsKey(context.Connection.RemoteIpAddress.ToString()))
-                    _clients.Add(context.Connection.RemoteIpAddress.ToString(), webSocket);
+                if (!clients.ContainsKey(context.Connection.RemoteIpAddress.ToString()))
+                    clients.Add(context.Connection.RemoteIpAddress.ToString(), webSocket);
                 while (true)
                 {
                     WebSocketReceiveResult result = null;
@@ -43,15 +45,13 @@ namespace monicaWebsocketServer
                         }
                         else
                         {
-                            _clients.Remove(context.Connection.RemoteIpAddress.ToString());
+                            clients.Remove(context.Connection.RemoteIpAddress.ToString());
                             break;
                         }
                     } while (result != null && !result.EndOfMessage);
 
-                    if (webSocket.State.ToString() == "CloseReceived"){
-                        _clients.Remove(context.Connection.RemoteIpAddress.ToString());
+                    if (webSocket.State.ToString() == "CloseReceived")
                         break;
-                    }
 
                     if (!webSocket.CloseStatus.HasValue)
                     {
@@ -60,29 +60,58 @@ namespace monicaWebsocketServer
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                await SendToServer(context, $"Error: {e.Message}");
+                exceptions.Add(new ExceptionDTO
+                {
+                    Ip = context.Connection.RemoteIpAddress.ToString(),
+                    Message = ex.ToString()
+                });
+                await SendToServer(context, $"Error: {ex.Message}");
             }
         }
 
         public static async void Respond(WebSocket webSocket, string message)
         {
-            var byteMessage = Encoding.UTF8.GetBytes(message);
-            var segmnet = new ArraySegment<byte>(byteMessage, 0, byteMessage.Length);
-            await webSocket.SendAsync(segmnet, WebSocketMessageType.Text, true, CancellationToken.None);
+            try
+            {
+                var byteMessage = Encoding.UTF8.GetBytes(message);
+                var segmnet = new ArraySegment<byte>(byteMessage, 0, byteMessage.Length);
+                await webSocket.SendAsync(segmnet, WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                var conError = clients.First(x => x.Value == webSocket);
+                clients.Remove(conError.Key);
+                exceptions.Add(new ExceptionDTO
+                {
+                    Ip = conError.Key,
+                    Message = ex.ToString()
+                });
+            }
         }
 
         public static async Task SendToServer(HttpContext context, string data)
         {
-            var obj = new WebSocketDTO
+            try
             {
-                data = data
-            };
-            var content = new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json");
+                var obj = new WebSocketDTO
+                {
+                    data = data
+                };
+                var content = new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json");
 
-            // await POST($"https://localhost:44392/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
-            await POST($"https://moniextra.com/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
+                // await POST($"https://localhost:44392/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
+                await POST($"https://moniextra.com/API/ReportesLocales/ReceiveDataFromWebSocketServer?IP={context.Connection.RemoteIpAddress}", content);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(new ExceptionDTO
+                {
+                    Ip = context.Connection.RemoteIpAddress.ToString(),
+                    Message = ex.ToString()
+                });
+            }
         }
     }
 }
