@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using static monicaWebsocketServer.WSController;
 using static monicaWebsocketServer.Clients;
+using System.Threading.Tasks;
 
 namespace monicaWebsocketServer
 {
@@ -8,6 +9,14 @@ namespace monicaWebsocketServer
     [Route("API/SendDataClient")]
     public class SendDataClientController : ControllerBase
     {
+
+        [HttpGet]
+        [Route("RemoveClient")]
+        public async Task<StatusCodeResult> RemoveClient(string IP) {
+            await Clients.RemoveClient(Request.HttpContext.Connection.RemoteIpAddress.ToString());
+            return StatusCode(200);
+        }
+
         [HttpPost]
         [Route("SendToClient")]
         [Route("SendToClient/{IP}")]
@@ -19,7 +28,6 @@ namespace monicaWebsocketServer
                 Respond(websocket, data.data);
                 return true;
             }
-
             return false;
         }
 
@@ -32,11 +40,5 @@ namespace monicaWebsocketServer
         [Route("Exceptions")]
         public JsonResult Exceptions(bool clear = false) =>
             Clients.Exceptions(clear);
-        
-        [HttpGet]
-        [Route("SetException")]
-        public JsonResult SetException(){
-            throw new System.Exception("Exception throwed");
-        }
     }
 }
