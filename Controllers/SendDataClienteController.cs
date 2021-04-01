@@ -9,13 +9,10 @@ namespace monicaWebsocketServer
     [Route("API/SendDataClient")]
     public class SendDataClientController : ControllerBase
     {
-
         [HttpGet]
         [Route("RemoveClient")]
-        public async Task<StatusCodeResult> RemoveClient(string IP) {
-            await Clients.RemoveClient(Request.HttpContext.Connection.RemoteIpAddress.ToString());
-            return StatusCode(200);
-        }
+        public StatusCodeResult RemoveClient(string IP) =>
+            StatusCode(200);
 
         [HttpPost]
         [Route("SendToClient")]

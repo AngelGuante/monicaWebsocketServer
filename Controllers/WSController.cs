@@ -25,6 +25,8 @@ namespace monicaWebsocketServer
             {
                 if (!clients.ContainsKey(context.Connection.RemoteIpAddress.ToString()))
                     clients.Add(context.Connection.RemoteIpAddress.ToString(), webSocket);
+                else
+                    clients[context.Connection.RemoteIpAddress.ToString()] = webSocket;
                 while (true)
                 {
                     WebSocketReceiveResult result = null;
@@ -38,10 +40,10 @@ namespace monicaWebsocketServer
                             byte[] messageBytes = message.Skip(message.Offset).Take(result.Count).ToArray();
                             string serialisedMessage = Encoding.UTF8.GetString(messageBytes);
 
-                            if (_clientDataTMP.ContainsKey(context.Connection.Id))
-                                _clientDataTMP[context.Connection.Id] += serialisedMessage;
+                            if (_clientDataTMP.ContainsKey(context.Connection.RemoteIpAddress.ToString()))
+                                _clientDataTMP[context.Connection.RemoteIpAddress.ToString()] += serialisedMessage;
                             else
-                                _clientDataTMP.Add(context.Connection.Id, serialisedMessage);
+                                _clientDataTMP.Add(context.Connection.RemoteIpAddress.ToString(), serialisedMessage);
                         }
                         else
                         {
@@ -55,19 +57,24 @@ namespace monicaWebsocketServer
 
                     if (!webSocket.CloseStatus.HasValue)
                     {
-                        await SendToServer(context, _clientDataTMP[context.Connection.Id]);
-                        _clientDataTMP.Remove(context.Connection.Id);
+                        await SendToServer(context, _clientDataTMP[context.Connection.RemoteIpAddress.ToString()]);
+                        _clientDataTMP.Remove(context.Connection.RemoteIpAddress.ToString());
                     }
                 }
             }
             catch (Exception ex)
             {
-                exceptions.Add(new ExceptionDTO
+                if(ex.Message != "he remote party closed the WebSocket connection without completing the close handshake.")
+                    clients.Remove(context.Connection.RemoteIpAddress.ToString());
+                else
                 {
-                    Ip = context.Connection.RemoteIpAddress.ToString(),
-                    Message = ex.ToString()
-                });
-                await SendToServer(context, $"Error: {ex.Message}");
+                    exceptions.Add(new ExceptionDTO
+                    {
+                        Ip = context.Connection.RemoteIpAddress.ToString(),
+                        Message = ex.ToString()
+                    });
+                    await SendToServer(context, $"Error: {ex.Message}");
+                }
             }
         }
 

@@ -3,6 +3,7 @@ using monicaWebsocketServer;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
+using static monicaWebsocketServer.Clients;
 
 namespace monicaWebsocketServer
 {
@@ -24,11 +25,16 @@ namespace monicaWebsocketServer
             }
             catch (Exception ex)
             {
-                exceptions.Add(new ExceptionDTO
+                if(ex.Message != "he remote party closed the WebSocket connection without completing the close handshake.")
+                    await Clients.RemoveClient(httpContext.Connection.RemoteIpAddress.ToString());
+                else
                 {
-                    Ip = httpContext.Connection.RemoteIpAddress.ToString(),
-                    Message = ex.ToString()
-                });
+                    exceptions.Add(new ExceptionDTO
+                    {
+                        Ip = httpContext.Connection.RemoteIpAddress.ToString(),
+                         Message = ex.ToString()
+                    });
+                }
             }
         }
     }
