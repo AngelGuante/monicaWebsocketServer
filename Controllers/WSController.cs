@@ -64,7 +64,7 @@ namespace monicaWebsocketServer
             }
             catch (Exception ex)
             {
-                if(ex.Message != "he remote party closed the WebSocket connection without completing the close handshake.")
+                if(ex.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
                     clients.Remove(context.Connection.RemoteIpAddress.ToString());
                 else
                 {
